@@ -65,6 +65,16 @@
           </StackPanel>
           <TextBlock IsVisible="{Binding HasError}" Text="{Binding Error, StringFormat='⚠ {0}'}"
                      Foreground="#F5A524" TextWrapping="Wrap" />
+          <Border IsVisible="{Binding UpdateAvailable}" Background="#263E9BEA" CornerRadius="6" Padding="10,6">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{Binding UpdateText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding UpdateStatus}" Classes="dim" IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              </StackPanel>
+              <Button Grid.Column="1" Content="What's new" Command="{Binding ReleaseNotesCommand}" />
+              <Button Grid.Column="2" Content="Update" Command="{Binding UpdateCommand}" IsEnabled="{Binding CanUpdate}" Classes="accent" />
+            </Grid>
+          </Border>
         </StackPanel>
       </Border>
 

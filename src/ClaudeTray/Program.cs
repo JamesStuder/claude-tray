@@ -9,7 +9,7 @@ static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        if (args.Any(a => a is "--text" or "--sessions" or "--version" or "--help" or "-h"))
+        if (args.Any(a => a is "--text" or "--sessions" or "--update" or "--version" or "--help" or "-h"))
             return Cli.Run(args);
 
         // One tray per user.
@@ -49,6 +49,14 @@ static class Cli
             Console.WriteLine("claude-tray " + typeof(Cli).Assembly.GetName().Version?.ToString(3));
             return 0;
         }
+        if (args.Contains("--update"))
+        {
+            var r = Updater.CheckAsync().GetAwaiter().GetResult();
+            if (r is null) { Console.WriteLine($"Up to date ({Updater.Current.ToString(3)})."); return 0; }
+            var failed = Updater.InstallAsync(r, Console.WriteLine).GetAwaiter().GetResult();
+            Console.WriteLine(failed ?? $"Installing {r.Tag}; the installer replaces and restarts Claude Tray.");
+            return failed is null ? 0 : 1;
+        }
         if (args.Contains("--sessions"))
         {
             var r = SessionsService.Get(AppConfig.Load(), new SessionWindows());
@@ -62,6 +70,7 @@ static class Cli
             Console.WriteLine("claude-tray            start the tray icon\n" +
                               "claude-tray --text     print plan limits and today's tokens\n" +
                               "claude-tray --sessions list background sessions\n" +
+                              "claude-tray --update   install the latest release from GitHub, if newer\n" +
                               "claude-tray --version\n\n" +
                               $"Settings: {AppConfig.FilePath}\nLog: {Log.FilePath}");
             return 0;

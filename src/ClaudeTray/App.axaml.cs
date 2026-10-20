@@ -68,6 +68,11 @@ public partial class App : Application
         Every(TimeSpan.FromSeconds(60), () => _ = _vm.RefreshUsageAsync());
         _sessionsTimer = Every(TimeSpan.FromSeconds(15), () => _ = _vm.RefreshSessionsAsync());
         Every(TimeSpan.FromSeconds(30), () => { if (_panel?.IsVisible == true) _vm.Tick(); });
+        // Updates: first check a minute after start, then every 6 hours.
+        DispatcherTimer.RunOnce(() => { if (_cfg.CheckForUpdates) _ = _vm.CheckForUpdateAsync(); }, TimeSpan.FromMinutes(1));
+        var updates = new DispatcherTimer { Interval = TimeSpan.FromHours(6) };
+        updates.Tick += (_, _) => { if (_cfg.CheckForUpdates) _ = _vm.CheckForUpdateAsync(); };
+        updates.Start();
     }
 
     static NativeMenuItem Item(string header, Action action)
@@ -103,7 +108,7 @@ public partial class App : Application
         _panel?.HidePanel();
         if (_settings is null)
         {
-            var vm = new SettingsViewModel(_cfg, AppearanceChanged);
+            var vm = new SettingsViewModel(_cfg, AppearanceChanged, _vm.CheckForUpdateAsync);
             _settings = new SettingsWindow { DataContext = vm };
             _settings.Closed += (_, _) => _settings = null;
             _ = vm.RefreshAuthAsync();

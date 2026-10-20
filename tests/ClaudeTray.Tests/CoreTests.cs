@@ -179,3 +179,35 @@ public class TokenStatsTests
     }
 }
 
+
+public class UpdaterTests
+{
+    const string Release = """
+    {"tag_name":"v2.1.0","html_url":"https://github.com/JamesStuder/claude-tray/releases/tag/v2.1.0","draft":false,"prerelease":false,
+     "assets":[{"name":"claude-tray-2.1.0-linux-x64.tar.gz","browser_download_url":"https://x/l.tar.gz"},
+               {"name":"claude-tray-2.1.0-win-x64.zip","browser_download_url":"https://x/w.zip"},
+               {"name":"SHA256SUMS","browser_download_url":"https://x/SHA256SUMS"}]}
+    """;
+
+    [Fact]
+    public void PicksAssetForPlatform()
+    {
+        var l = Updater.Parse(Release, "linux-x64")!;
+        Assert.Equal(new Version(2, 1, 0), l.Version);
+        Assert.Equal("claude-tray-2.1.0-linux-x64.tar.gz", l.AssetName);
+        Assert.Equal("https://x/SHA256SUMS", l.SumsUrl);
+        Assert.Equal("https://x/w.zip", Updater.Parse(Release, "win-x64")!.AssetUrl);
+        Assert.Null(Updater.Parse(Release, "linux-arm64"));
+    }
+
+    [Fact]
+    public void SkipsPrerelease() => Assert.Null(Updater.Parse(Release.Replace("\"prerelease\":false", "\"prerelease\":true"), "linux-x64"));
+
+    [Fact]
+    public void ReadsChecksums()
+    {
+        const string sums = "abc123  claude-tray-2.1.0-linux-x64.tar.gz\ndef456  claude-tray-2.1.0-win-x64.zip\n";
+        Assert.Equal("def456", Updater.ExpectedHash(sums, "claude-tray-2.1.0-win-x64.zip"));
+        Assert.Null(Updater.ExpectedHash(sums, "other.zip"));
+    }
+}

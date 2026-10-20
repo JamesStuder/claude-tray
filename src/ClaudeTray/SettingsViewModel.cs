@@ -60,10 +60,12 @@ public sealed class SettingsViewModel : ObservableObject
 {
     readonly AppConfig _cfg;
     readonly Action _appearanceChanged;
+    readonly Func<Task<string>> _checkUpdates;
 
-    public SettingsViewModel(AppConfig cfg, Action appearanceChanged)
+    public SettingsViewModel(AppConfig cfg, Action appearanceChanged, Func<Task<string>> checkUpdates)
     {
         _cfg = cfg;
+        _checkUpdates = checkUpdates;
         _appearanceChanged = appearanceChanged;
         Colors =
         [
@@ -79,6 +81,7 @@ public sealed class SettingsViewModel : ObservableObject
         IssueCommand = new RelayCommand(_ => Terminal.OpenUrl(Support.IssuesUrl));
         ProjectCommand = new RelayCommand(_ => Terminal.OpenUrl(Support.ProjectUrl));
         OpenConfigCommand = new RelayCommand(_ => OpenFile(AppConfig.FilePath));
+        CheckUpdatesCommand = new RelayCommand(async _ => { UpdateCheckStatus = "Checking…"; UpdateCheckStatus = await _checkUpdates(); });
         OpenLogCommand = new RelayCommand(_ => OpenFile(Log.FilePath));
     }
 
@@ -176,6 +179,14 @@ public sealed class SettingsViewModel : ObservableObject
     // ---- about
 
     public string Version => "Claude Tray " + typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3);
+    public bool CheckForUpdates
+    {
+        get => _cfg.CheckForUpdates;
+        set { _cfg.CheckForUpdates = value; Raise(); SaveAppearance(); }
+    }
+    string _updateCheckStatus = "";
+    public string UpdateCheckStatus { get => _updateCheckStatus; private set => Set(ref _updateCheckStatus, value); }
+    public ICommand CheckUpdatesCommand { get; }
     public string ConfigPath => AppConfig.FilePath;
     public string LogPath => Log.FilePath;
     public ICommand OpenConfigCommand { get; }

@@ -32,6 +32,8 @@ public sealed class MainViewModel : ObservableObject
         OpenClaudeCommand = new RelayCommand(_ => OpenClaude());
         UsagePageCommand = new RelayCommand(_ => { RequestHide?.Invoke(); Terminal.OpenUrl("https://claude.ai/settings/usage"); });
         SettingsCommand = new RelayCommand(_ => OpenSettings?.Invoke());
+        UpdateCommand = new RelayCommand(_ => _ = UpdateAsync());
+        ReleaseNotesCommand = new RelayCommand(_ => { if (_update is { } r) { RequestHide?.Invoke(); Terminal.OpenUrl(r.PageUrl); } });
         ClearModelCommand = new RelayCommand(_ => Background(() => _usage.ClearDefaultModel(), refreshUsage: true));
     }
 
@@ -49,7 +51,8 @@ public sealed class MainViewModel : ObservableObject
     public string ToolTip =>
         (Running ? "Claude Code running" : "Claude Code not running")
         + (NeedsCount > 0 ? $"\n{NeedsCount} session{(NeedsCount > 1 ? "s" : "")} need input" : "")
-        + (SessionPercent is { } s ? $"\nSession {s:0}% · weekly {MaxPercent:0}% max" : "");
+        + (SessionPercent is { } s ? $"\nSession {s:0}% · weekly {MaxPercent:0}% max" : "")
+        + (_update is { } u ? $"\nUpdate available: {u.Version.ToString(3)}" : "");
 
     // ---- header / footer
     string _plan = "";
@@ -66,6 +69,53 @@ public sealed class MainViewModel : ObservableObject
     public ICommand UsagePageCommand { get; }
     public ICommand ClearModelCommand { get; }
     public ICommand SettingsCommand { get; }
+
+    // ---- update banner
+    ReleaseInfo? _update;
+    bool _updating;
+    string _lastNotified = "";
+    public bool UpdateAvailable => _update is not null;
+    public string UpdateText => _update is null ? "" : $"Claude Tray {_update.Version.ToString(3)} is available (you have {Updater.Current.ToString(3)})";
+    public bool CanUpdate => _update is not null && !_updating;
+    public ICommand UpdateCommand { get; }
+    public ICommand ReleaseNotesCommand { get; }
+    public string UpdateStatus { get; private set; } = "";
+
+    /// <summary>Checks GitHub for a newer release. Returns a status line (for Settings → Check now).</summary>
+    public async Task<string> CheckForUpdateAsync()
+    {
+        try
+        {
+            var r = await Task.Run(Updater.CheckAsync);
+            _update = r;
+            Raise(nameof(UpdateAvailable)); Raise(nameof(UpdateText)); Raise(nameof(CanUpdate));
+            TrayStateChanged?.Invoke();
+            if (r is null) return $"You have the latest version ({Updater.Current.ToString(3)}).";
+            if (_lastNotified != r.Tag)
+            {
+                _lastNotified = r.Tag;
+                Notifier.Show($"Claude Tray {r.Version.ToString(3)} is available — open the panel to update.");
+            }
+            return $"Version {r.Version.ToString(3)} is available.";
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            Log.Error("update check", e);
+            return "Couldn't reach GitHub to check for updates.";
+        }
+    }
+
+    async Task UpdateAsync()
+    {
+        if (_update is not { } r) return;
+        _updating = true;
+        Raise(nameof(CanUpdate));
+        void Progress(string m) => Dispatcher.UIThread.Post(() => { UpdateStatus = m; Raise(nameof(UpdateStatus)); });
+        var err = await Task.Run(() => Updater.InstallAsync(r, Progress));
+        UpdateStatus = err ?? "Installing — Claude Tray will restart in a moment.";
+        Raise(nameof(UpdateStatus));
+        if (err is not null) { _updating = false; Raise(nameof(CanUpdate)); }
+    }
 
     // ---- sessions column
     public List<SessionGroupVM> Groups { get; }

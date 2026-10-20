@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Updates: checks GitHub for a new release (a minute after start, then every 6 hours); the panel shows it with **Update** (downloads the release for your platform, checks it against SHA256SUMS, runs its installer and restarts) and **What's new**. Off switch and *Check now* in Settings → About. `claude-tray --update` does the same from a terminal.
 - Settings → Support opens a GitHub issue; the pay-what-you-want link is gone for now.
 
 ## 2.0.0 — 2026-10-20

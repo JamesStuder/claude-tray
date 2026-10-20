@@ -38,6 +38,9 @@ public sealed class AppConfig
     /// <summary>The Claude Code executable. Empty = ~/.local/bin/claude (the native installer's), else PATH.</summary>
     public string ClaudeCommand { get; set; } = "";
 
+    /// <summary>Look for new releases on GitHub (at start, then every 6 hours).</summary>
+    public bool CheckForUpdates { get; set; } = true;
+
     /// <summary>"system", "light" or "dark".</summary>
     public string Theme { get; set; } = "system";
 

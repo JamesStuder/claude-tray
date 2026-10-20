@@ -29,6 +29,9 @@ executable per platform; no .NET install needed on the target machine.
 - **Right click** (menu): Open Claude Code, the usage panel, Usage on claude.ai, Refresh,
   Settings file, Quit.
 - Terminal summary: `claude-tray --text`
+- **Updates**: when a new release is out, the panel says so; **Update** downloads it from GitHub,
+  checks it against the release's SHA256SUMS, runs its installer and restarts the app. Turn the
+  check off in *Settings → About*. From a terminal: `claude-tray --update`.
 
 ### Model buttons
 
