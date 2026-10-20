@@ -1,114 +1,124 @@
-# plasma-claude-usage
+# Claude Tray
 
-A KDE Plasma 6 panel widget for **Claude Code**: your background sessions (which ones
-need input, which are done) and where you stand on your plan — how much of each limit is
-used, when it resets, whether you're on pace to run out, and how many tokens you used
-today and this week.
+A system-tray app for **Claude Code** on Linux and Windows: your background sessions (which
+ones need input, which are done) and where you stand on your plan — how much of each limit is
+used, when it resets, whether you're on pace to run out, and how many tokens you used today
+and this week.
 
-- **Badges** on the icon: current 5-hour session usage in percent, coloured by your
-  highest limit (green, orange from 70 %, red from 90 %), and the number of background
-  sessions waiting for input.
-- **Left click** opens the panel. The left column lists your background sessions:
-  - **Needs input**, **Working**, **Completed** (newest 10, *Show all* for the rest) and
-    **Failed**, each with its last status line or result and how long ago it changed
-  - **Click** a session to open it in its own terminal window (or raise the window if
-    it's already open). Finished sessions open too, so you can carry on the conversation.
-  - **✕** then **Remove** takes a session off the list (`claude rm`). Its conversation
-    log is kept, so `claude --resume` still finds it.
+Version 2 is a rewrite: the KDE Plasma widget (v1, still on the `v1.x` tags) became a standalone
+app that runs on any Linux desktop with a system tray and on Windows.
 
-  The right column shows your usage:
-  - **Limits** — every limit on your plan (session, weekly, per-model weekly limits),
-    with a meter and the time until it resets
-  - **Pace** — a straight-line projection: "on pace for 62 % by reset", or the time you'd
-    hit 100 % if that's before the reset
-  - **Tokens by day** — the last 7 days, today in bold
-  - **Tokens by model** — today's tokens per model, with the input / output / cache split
-  - **Model** — optional buttons that switch the model of a Claude Code session running
-    in tmux
-  - **Refresh**, **Restart** (tmux only), **Open Claude Code**, **Usage on claude.ai**
-- **Right click** opens Claude Code.
-- **Hover** for a short summary.
+C# / .NET 10 with [Avalonia](https://avaloniaui.net) 12 for the UI. One self-contained
+executable per platform; no .NET install needed on the target machine.
 
-There's also a terminal view: `claude-usage --text`
+## What it shows
 
-```
-Session (5 h)           15%  resets 6:00 PM (in 3h 55m)  — on pace for 70% by reset
-Weekly · all models     65%  resets 4:00 PM (in 1h 55m)  — on pace for 66% by reset
-Today: 131.6M tokens (385.6k output)
-```
+- **Tray icon** with badges: current 5-hour session usage in percent (bottom right), coloured
+  by your highest limit (green, orange from 70 %, red from 90 %), and the number of background
+  sessions waiting for input (top left). Dimmed while Claude Code isn't running.
+- **Left click** opens the panel:
+  - **Left column — background sessions**: *Needs input*, *Working*, *Completed* (newest 10,
+    *Show all* for the rest) and *Failed*, each with its last status line or result and how long
+    ago it changed. **Click** a session to open it in a terminal (`claude attach`), or raise its
+    window if it's already open. **✕** then **Remove** drops it from the list (`claude rm`; the
+    conversation log is kept, `claude --resume` still finds it).
+  - **Right column — usage**: *Limits* (meter + time to reset), *Tokens by day* (last 7 days),
+    *Tokens by model* (today, with the input / output / cache split), *Pace* (straight-line
+    projection to each reset) and *Model* buttons.
+  - Footer: **Refresh**, **Restart** (tmux only), **Open / Start Claude Code**.
+- **Right click** (menu): Open Claude Code, the usage panel, Usage on claude.ai, Refresh,
+  Settings file, Quit.
+- Terminal summary: `claude-tray --text`
 
-## Requirements
+### Model buttons
 
-- KDE Plasma 6
-- Python 3.11+
-- Claude Code, signed in with a Claude subscription (Pro / Max / Team) — the limits
-  come from your Claude Code login
-- Optional: `tmux` for the model and restart buttons, `notify-send` for their confirmations
-- The session list uses `claude agents` / `claude attach` / `claude rm` (background
-  sessions, `claude --bg`)
+- With `tmuxTarget` set (Linux, Claude Code running in tmux): the button types `/model <id>`
+  into that running session, and **Restart** restarts it in place, resuming the same
+  conversation (e.g. after an update).
+- Otherwise (always on Windows): the button sets `"model"` in Claude Code's user
+  `settings.json`, the model every **new** session starts with. **Account default** removes
+  it. The first change backs the file up to `settings.json.claude-tray.bak`.
+
+## Where the data comes from
+
+| What | Source |
+|---|---|
+| Limits | The endpoint Claude Code's `/usage` uses, called with Claude Code's own login (`.credentials.json`), at most every 5 minutes. The login is only read, never refreshed. Not a documented public API; it may change. |
+| Tokens | Claude Code's session logs (`projects/**/*.jsonl`), de-duplicated per message, by local day. Only changed files are re-read. |
+| Sessions | `claude agents --json --all`, plus `jobs/<id>/state.json` for the status line and result. |
+
+`CLAUDE_CONFIG_DIR` is honoured.
 
 ## Install
 
+### Linux
+
 ```sh
-git clone https://github.com/JamesStuder/plasma-claude-usage
-cd plasma-claude-usage
-./install.sh
+./build.sh linux-x64                 # or skip: packaging/linux/install.sh builds too
+packaging/linux/install.sh           # --no-autostart to not start it at login
 ```
 
-Then right-click your panel → **Add or Manage Widgets** → **Claude Code Usage**, and
-drag it where you want it (next to the system tray works well).
+Installs to `~/.local/lib/claude-tray` (+ `~/.local/bin/claude-tray`), an app-menu entry and an
+autostart entry, then starts it. Remove with `packaging/linux/uninstall.sh`.
 
-It's a panel widget rather than a system-tray entry because the system tray gives every
-popup the same fixed size, which is too narrow for the two columns. On the panel the
-popup sizes itself so the usage column fits without scrolling.
+The tray icon uses StatusNotifierItem: KDE Plasma and most desktops show it; GNOME needs the
+AppIndicator extension. On Plasma the panel opens next to the mouse pointer (placed by KWin);
+elsewhere next to the panel / taskbar.
 
-Remove with `./uninstall.sh`.
+### Windows
+
+Copy `dist\win-x64` to the machine, then in PowerShell:
+
+```powershell
+.\install.ps1                        # -NoAutostart to not start it at sign-in
+```
+
+Installs to `%LOCALAPPDATA%\Programs\ClaudeTray`, adds a Start-menu shortcut and a sign-in
+entry (HKCU Run), then starts it. Remove with `.\uninstall.ps1`. No admin rights needed.
+
+Sessions open in Windows Terminal (`wt.exe`) when it's installed, else in a console window.
 
 ## Configure
 
-`~/.config/claude-usage/config.toml` (created from
-[`config.example.toml`](config.example.toml)):
+`config.json` — `~/.config/claude-tray/` on Linux, `%APPDATA%\ClaudeTray\` on Windows. Written
+with the defaults on first start; tray menu → *Settings file…* opens it. Restart the app after
+editing.
 
 | Key | Default | What it does |
 |---|---|---|
-| `open_command` | `konsole -e claude` | What right click / *Open Claude Code* runs |
-| `tmux_target` | *(empty)* | e.g. `-L claude -t claude` — tmux socket and pane of your Claude Code session; enables the **Model** and **Restart** buttons |
-| `claude_command` | `claude` | What **Restart** starts in the pane (with `--resume <session id>`) |
-| `models` | current models | The model buttons: `[label, model id]` pairs |
-| `session_command` | `konsole --separate -p tabtitle={name} -e {claude} attach {id}` | Terminal a session opens in; `{claude}` is the first word of `claude_command`, `{id}` / `{name}` the session's. Keep the terminal in the foreground so its window can be raised later. |
+| `openCommand` | *(empty)* | What *Open Claude Code* runs (through `sh -c` on Linux). Empty = a terminal running `claude` in your home folder |
+| `sessionCommand` | *(empty)* | Terminal a session opens in; `{claude}`, `{id}`, `{name}`, `{title}` are filled in. Empty = picked for your terminal (konsole, gnome-terminal, kgx, xfce4-terminal, alacritty, kitty, wezterm, foot, xterm; Windows Terminal or a console on Windows) |
+| `tmuxTarget` | *(empty)* | Linux: tmux socket and pane of your Claude Code, e.g. `-L claude -t claude`. Enables live model switching and **Restart** |
+| `claudeCommand` | *(empty)* | The Claude Code executable. Empty = `~/.local/bin/claude` (native installer), else `claude` on PATH |
+| `models` | current models | The model buttons: `{ "name": …, "id": … }` |
 
-`CLAUDE_CONFIG_DIR` is honoured if you keep Claude Code's files somewhere other than
-`~/.claude`.
+Log: `~/.cache/claude-tray/claude-tray.log` (Linux), `%LOCALAPPDATA%\ClaudeTray\cache\claude-tray.log` (Windows).
 
-## How it works
+## Build
 
-- **Limits** come from the same endpoint Claude Code's own `/usage` command uses, called
-  with Claude Code's existing login (read from its credentials file) at most every
-  5 minutes and cached in `~/.cache/claude-usage/`. The login is only read, never
-  refreshed, so the widget can't interfere with Claude Code. If the token has expired
-  the panel keeps showing the last numbers and says so, until Claude Code renews it.
-  This endpoint isn't a documented public API and could change.
-- **Tokens** are added up from Claude Code's local session logs
-  (`~/.claude/projects/**/*.jsonl`), de-duplicated per message and grouped by local day.
-  Totals include cached input, which is usually the largest part.
-- **Pace** assumes you keep using the plan at the same average rate for the rest of the
-  window.
-- **Model buttons** type `/model <id>` into the tmux pane you configured. Use them when
-  Claude Code's input box is empty.
-- **Restart** ends the Claude Code in that tmux pane and starts it again with
-  `--resume <session id>`, so the same conversation continues — handy after an update or
-  a settings change that needs a restart. The session id comes from Claude Code's
-  `~/.claude/sessions/<pid>.json`; if none is found it starts a fresh session.
+Needs the .NET 10 SDK.
 
-- **Sessions** come from `claude agents --json --all`; the status line and result come
-  from Claude Code's `~/.claude/jobs/<id>/state.json`. The list refreshes every 15 s,
-  every 3 s while the panel is open. An open session window is raised with a one-shot
-  KWin script.
+```sh
+dotnet test                          # unit tests
+./build.sh                           # dist/linux-x64 and dist/win-x64 (self-contained, single file)
+dotnet run --project src/ClaudeTray  # run from source
+```
 
-Nothing is sent anywhere except the usage request to the same Anthropic endpoint Claude
-Code itself uses.
+| Path | |
+|---|---|
+| `src/ClaudeTray.Core` | Everything but the UI: limits, tokens, sessions, terminals, tmux, KWin, settings.json |
+| `src/ClaudeTray` | Avalonia app: tray icon, panel, `--text` mode |
+| `tests/ClaudeTray.Tests` | xUnit tests for the Core parsing and formatting |
+| `packaging/` | Per-user install / uninstall scripts for Linux and Windows |
 
-## License
+## Support
 
-MIT. Not affiliated with or endorsed by Anthropic; "Claude" and "Claude Code" are
-trademarks of Anthropic.
+Claude Tray is free and open source (MIT). If it saves you time, you can support it with whatever
+amount you like — see *Settings → Support* in the app.
+
+## Upgrading from the v1 Plasma widget
+
+Remove the old widget from your panel (right-click it → Remove), run `./uninstall.sh` from your v1
+checkout if you like, then install v2 as above. v1's `~/.config/claude-usage/config.toml` isn't
+read; the matching v2 keys are `openCommand`, `tmuxTarget`, `claudeCommand`, `sessionCommand` and
+`models` in `config.json`.

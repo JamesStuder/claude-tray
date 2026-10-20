@@ -1,0 +1,88 @@
+using System.Runtime.InteropServices;
+using Avalonia;
+using ClaudeTray.Core;
+
+namespace ClaudeTray;
+
+static class Program
+{
+    [STAThread]
+    public static int Main(string[] args)
+    {
+        if (args.Any(a => a is "--text" or "--sessions" or "--version" or "--help" or "-h"))
+            return Cli.Run(args);
+
+        // One tray per user.
+        using var single = new Mutex(true, "ClaudeTray-" + Environment.UserName, out bool first);
+        if (!first)
+        {
+            Log.Info("already running; exiting");
+            return 0;
+        }
+        try
+        {
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            return 0;
+        }
+        catch (Exception e)
+        {
+            Log.Error("fatal", e);
+            throw;
+        }
+    }
+
+    public static AppBuilder BuildAvaloniaApp() =>
+        AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().LogToTrace();
+}
+
+/// <summary>Terminal mode: `claude-tray --text` prints the limits and today's tokens.</summary>
+static class Cli
+{
+    public static int Run(string[] args)
+    {
+        // A WinExe has no console of its own: borrow the calling terminal's, unless output is already
+        // redirected (a pipe, ssh), which must keep working.
+        if (OperatingSystem.IsWindows() && GetStdHandle(-11) == IntPtr.Zero) AttachConsole(-1);
+        if (OperatingSystem.IsWindows()) Console.OutputEncoding = System.Text.Encoding.UTF8;
+        if (args.Contains("--version"))
+        {
+            Console.WriteLine("claude-tray " + typeof(Cli).Assembly.GetName().Version?.ToString(3));
+            return 0;
+        }
+        if (args.Contains("--sessions"))
+        {
+            var r = SessionsService.Get(AppConfig.Load(), new SessionWindows());
+            foreach (var s in r.Sessions)
+                Console.WriteLine($"{s.Group,-8} {s.Id}  {Format.Ago(s.Updated, DateTimeOffset.Now),4}{(s.Open ? " open" : "")}  {s.Name}  — {Format.OneLine(s.Text, 80)}");
+            if (r.Error is { } e) Console.WriteLine("note: " + e);
+            return 0;
+        }
+        if (!args.Contains("--text"))
+        {
+            Console.WriteLine("claude-tray            start the tray icon\n" +
+                              "claude-tray --text     print plan limits and today's tokens\n" +
+                              "claude-tray --sessions list background sessions\n" +
+                              "claude-tray --version\n\n" +
+                              $"Settings: {AppConfig.FilePath}\nLog: {Log.FilePath}");
+            return 0;
+        }
+        var cfg = AppConfig.Load();
+        var u = new UsageService(cfg).GetAsync(force: args.Contains("--refresh")).GetAwaiter().GetResult();
+        if (u.Plan.Length > 0) Console.WriteLine(u.Plan);
+        foreach (var l in u.Limits.Limits)
+        {
+            var reset = l.ResetsAt is { } r ? Format.ResetText(r, u.Taken) : "";
+            Console.WriteLine($"{l.Label,-22} {l.Percent,3:0}%  {reset}  — {Format.Pace(l, u.Taken)}");
+        }
+        Console.WriteLine($"Today: {Format.Human(u.Tokens.TodayTotal)} tokens ({Format.Human(u.Tokens.TodayOutput)} output)");
+        foreach (var m in u.Tokens.Models) Console.WriteLine($"   {m.Name}: {Format.Human(m.Total)}");
+        if (u.Limits.Error is { } err) Console.WriteLine("note: " + err);
+        return 0;
+    }
+
+    [DllImport("kernel32.dll")]
+    static extern bool AttachConsole(int processId);
+
+    [DllImport("kernel32.dll")]
+    static extern IntPtr GetStdHandle(int which);
+}

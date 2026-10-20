@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim())</Version>
+    <Company>Studer Works, LLC</Company>
+    <Product>Claude Tray</Product>
+    <Copyright>© Studer Works, LLC</Copyright>
+  </PropertyGroup>
+</Project>

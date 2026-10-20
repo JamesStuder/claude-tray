@@ -1,2 +1,7 @@
-__pycache__/
-*.pyc
+bin/
+obj/
+dist/
+*.user
+.vs/
+.idea/
+TestResults/
