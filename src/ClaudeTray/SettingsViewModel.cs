@@ -76,7 +76,7 @@ public sealed class SettingsViewModel : ObservableObject
         LoginCommand = new RelayCommand(_ => Login());
         LogoutCommand = new RelayCommand(_ => Logout());
         ResetColorsCommand = new RelayCommand(_ => ResetColors());
-        SupportCommand = new RelayCommand(_ => Terminal.OpenUrl(Support.CheckoutUrl));
+        IssueCommand = new RelayCommand(_ => Terminal.OpenUrl(Support.IssuesUrl));
         ProjectCommand = new RelayCommand(_ => Terminal.OpenUrl(Support.ProjectUrl));
         OpenConfigCommand = new RelayCommand(_ => OpenFile(AppConfig.FilePath));
         OpenLogCommand = new RelayCommand(_ => OpenFile(Log.FilePath));
@@ -170,9 +170,7 @@ public sealed class SettingsViewModel : ObservableObject
 
     // ---- support
 
-    public bool CanSupport => Support.CheckoutUrl.Length > 0;
-    public bool SupportComingSoon => !CanSupport;
-    public ICommand SupportCommand { get; }
+    public ICommand IssueCommand { get; }
     public ICommand ProjectCommand { get; }
 
     // ---- about

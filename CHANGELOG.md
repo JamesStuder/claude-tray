@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Settings → Support opens a GitHub issue; the pay-what-you-want link is gone for now.
+
 ## 2.0.0 — 2026-10-20
 
 Rewrite as a standalone cross-platform app (C#/.NET 10 + Avalonia) for Linux and Windows; replaces the

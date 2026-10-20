@@ -113,8 +113,8 @@ dotnet run --project src/ClaudeTray  # run from source
 
 ## Support
 
-Claude Tray is free and open source (MIT). If it saves you time, you can support it with whatever
-amount you like — see *Settings → Support* in the app.
+Questions, bugs and ideas: [open an issue](https://github.com/JamesStuder/claude-tray/issues/new)
+(also *Settings → Support* in the app). Claude Tray is free and open source (MIT), with nothing held back.
 
 ## Upgrading from the v1 Plasma widget
 

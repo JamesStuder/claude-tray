@@ -68,15 +68,13 @@
     <TabItem Header="Support">
       <ScrollViewer>
         <StackPanel>
-          <TextBlock Classes="h" Text="Free and open source" />
+          <TextBlock Classes="h" Text="Need help?" />
           <TextBlock Classes="dim"
-                     Text="Claude Tray is free to use, with everything included. If it saves you time, you can chip in whatever you like to support its development. Thank you!" />
+                     Text="Found a bug, have a question or an idea? Open an issue on GitHub. Please include your operating system and, for bugs, the log (About → Open log)." />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="♥  Support Claude Tray" Command="{Binding SupportCommand}" IsVisible="{Binding CanSupport}" Classes="accent" />
+            <Button Content="Open a GitHub issue" Command="{Binding IssueCommand}" Classes="accent" />
             <Button Content="Project on GitHub" Command="{Binding ProjectCommand}" />
           </StackPanel>
-          <TextBlock Classes="dim" FontSize="12" IsVisible="{Binding SupportComingSoon}"
-                     Text="The support page isn't set up yet." />
         </StackPanel>
       </ScrollViewer>
     </TabItem>
