@@ -160,7 +160,7 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <TextBlock Classes="section" Text="TOKENS BY DAY" />
+            <TextBlock Classes="section" Text="TOKENS BY DAY · THIS COMPUTER" />
             <ItemsControl ItemsSource="{Binding Days}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="local:DayRow">
@@ -175,7 +175,7 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <TextBlock Classes="section" Text="TOKENS BY MODEL · TODAY" IsVisible="{Binding HasModels}" />
+            <TextBlock Classes="section" Text="TOKENS BY MODEL · TODAY · THIS COMPUTER" IsVisible="{Binding HasModels}" />
             <ItemsControl ItemsSource="{Binding Models}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="local:ModelRow">

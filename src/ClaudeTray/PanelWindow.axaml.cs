@@ -53,6 +53,15 @@ public partial class PanelWindow : Window
     public void ShowPanel()
     {
         _shownAt = DateTime.UtcNow;
+        if (WinPlacement.PanelNearPointer(Width, MaxPanelHeight, Gap) is { } wp)
+        {
+            Height = wp.Height;
+            Position = new PixelPoint(wp.X, wp.Y);
+            Show();
+            Activate();
+            Log.Info($"panel shown at {Position} (pointer placement, scale {wp.Scale}) size {Width}x{Height}");
+            return;
+        }
         Place();
         if (!KWin.Available)
         {

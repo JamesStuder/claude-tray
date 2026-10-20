@@ -47,7 +47,7 @@ executable per platform; no .NET install needed on the target machine.
 | What | Source |
 |---|---|
 | Limits | The endpoint Claude Code's `/usage` uses, called with Claude Code's own login (`.credentials.json`), at most every 5 minutes. The login is only read, never refreshed. Not a documented public API; it may change. |
-| Tokens | Claude Code's session logs (`projects/**/*.jsonl`), de-duplicated per message, by local day. Only changed files are re-read. |
+| Tokens | Claude Code's session logs on **this computer** (`projects/**/*.jsonl`), de-duplicated per message, by local day. Only changed files are re-read. Limits are account-wide; token counts are per computer (the usage endpoint reports only percentages). |
 | Sessions | `claude agents --json --all`, plus `jobs/<id>/state.json` for the status line and result. |
 
 `CLAUDE_CONFIG_DIR` is honoured.

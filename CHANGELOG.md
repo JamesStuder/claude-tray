@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Windows: the panel opens next to the tray icon, placed from Windows' own monitor info at click time (it opened off screen after a Remote Desktop window was resized).
+- Token sections say *this computer*: they come from local session logs, while limits are account-wide.
 - Updates: checks GitHub for a new release (a minute after start, then every 6 hours); the panel shows it with **Update** (downloads the release for your platform, checks it against SHA256SUMS, runs its installer and restarts) and **What's new**. Off switch and *Check now* in Settings → About. `claude-tray --update` does the same from a terminal.
 - Settings → Support opens a GitHub issue; the pay-what-you-want link is gone for now.
 
